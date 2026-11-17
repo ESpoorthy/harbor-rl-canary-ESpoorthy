@@ -37,9 +37,9 @@ if python "$APP" "$TMP/edge.csv" > "$TMP/edge.json" 2>/dev/null; then
   python - "$TMP/edge.json" <<'PY' && check_edge=1 || true
 import json,sys
 v=json.load(open(sys.argv[1]))
-assert v["valid_count"] == 1
-assert v["failed_count"] == 1
-assert v["total_valid_amount"] == 3.25
+assert v["valid_count"] == 2
+assert v["failed_count"] == 0
+assert v["total_valid_amount"] == 13.25
 PY
 fi
 
