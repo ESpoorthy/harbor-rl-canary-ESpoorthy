@@ -18,6 +18,12 @@ A CSV file with the columns:
 - Monetary values must be handled accurately to two decimal places.
 - Handle malformed rows deterministically without crashing.
 
+## Command-line usage
+
+Run the program as:
+
+`python /app/reconcile.py INPUT.csv`
+
 ## Output
 
 Print a JSON object containing exactly the following required fields:
