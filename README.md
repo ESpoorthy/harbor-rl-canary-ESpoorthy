@@ -1,111 +1,101 @@
-# Harbor RL Submission — Sai Spoorthy Eturu (@ESpoorthy)
+# harbor-rl-canary-ESpoorthy
 
-Engineering internship take-home: build and calibrate a Harbor coding task, inspect agent trajectories, compare baseline and ablation runs, and design a dense reward verifier resistant to reward hacking.
+RL evaluation canary environment for Harbor (`tasks/reconcile-bug`), featuring a Python payment reconciliation CLI (`/app/reconcile.py`) with three planted bugs of increasing difficulty, an oracle solution, a reward-hacking baseline, and a hardened dense verifier.
 
-> **Submission status:** Scaffold initialized. Replace every `PENDING` / `TODO` item with verified implementation evidence before submission. Do not report experiments or checks as completed until they have actually run.
+- **Assignment Spec:** [Engineering Internship Take-Home: RL Environments & Agent Evaluation in Harbor](https://gist.github.com/sandys/ac4728e70b4de9e04c8038221b614fce)
+- **Repository:** [ESpoorthy/harbor-rl-canary-ESpoorthy](https://github.com/ESpoorthy/harbor-rl-canary-ESpoorthy)
+- **Loom Walkthrough (5 min):** `PENDING`
 
-## 1. Loom walkthrough
+---
 
-- **Video URL:** PENDING — record one continuous, unedited walkthrough (under 5 minutes) and set access to “Anyone with the link can view”.
+## 1. Environment & Planted Bugs (`tasks/reconcile-bug/`)
 
-## 2. Task and calibration summary
+The container (`python:3.12-slim`) runs `python3 /app/reconcile.py <path-to-csv>` and outputs JSON with `total_valid_amount`, `valid_count`, and `failed_count`.
 
-Task: `tasks/reconcile-bug/` — a small CSV payment reconciliation CLI used as a Harbor benchmark.
+| Defect | Difficulty | Planted Issue in `environment/reconcile.py` | Expected Behavior |
+| :--- | :--- | :--- | :--- |
+| **Bug 1 (CLI)** | Easy | Requires `--input` flag instead of a positional path argument | Accept `<path-to-csv>` as a positional CLI argument |
+| **Bug 2 (Logic)** | Medium | Counts `PENDING` transactions as valid | Exclude `PENDING`; count only `SUCCESS` in valid totals and `FAILED` in `failed_count` |
+| **Bug 3 (Edge Case)** | Hard | Compares raw timestamp strings and accumulates totals before deduplicating | Normalize timestamps (`Z` / offsets) to UTC instants, deduplicate by `tx_id` keeping the latest instant, use `Decimal` |
 
-Expected input columns: `tx_id,timestamp,amount,status`.
+---
 
-Expected JSON fields:
-- `total_valid_amount`
-- `valid_count`
-- `failed_count`
+## 2. Calibration Checks (`nop` & `oracle`)
 
-Business rules and planted defects must be described here after implementation is finalized. The agent-facing `instruction.md` must specify expected behavior without disclosing defect locations.
+| Agent | Expected Binary | Observed Binary | Expected Dense | Observed Dense | Status |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| `nop` | `0.000` | `PENDING` | `0.00` | `PENDING` | `PENDING` |
+| `oracle` (`solve.sh`) | `1.000` | `PENDING` | `1.00` | `PENDING` | `PENDING` |
 
-| Check | Expected | Observed |
-|---|---:|---:|
-| Harbor `nop` | 0.000 | PENDING |
-| Harbor `oracle` with `solve.sh` | 1.000 | PENDING |
-| Partial oracle (Bug 1 + 2 fixed, Bug 3 left broken) | weight-based partial score | PENDING |
-| Hardened verifier with `hack.sh` | 0.000 | PENDING |
+---
 
-## 3. Baseline and ablation results
+## 3. Baseline vs. Ablation Results (`terminus-2`, `-k 3 -n 1`)
 
-Run the same Harbor agent/model for three baseline trials and three ablation trials. Preserve the actual `result.json` and `trajectory.json` for each run under `jobs_summary/`.
+Advantage is computed per group as `Trial Reward - Mean Group Reward`.
 
-| Run | Single change | Trial 1 (binary / dense) | Trial 2 (binary / dense) | Trial 3 (binary / dense) | Mean binary | Mean dense | Binary advantages | Dense advantages |
-|---|---|---|---|---|---:|---:|---|---|
-| Baseline | Original task | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING |
-| Ablation | PENDING: describe exactly one controlled change | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING |
+| Run | Trial | Binary Reward | Binary Advantage | Dense Reward | Dense Advantage | Notes |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Baseline** | 1 | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` |
+| **Baseline** | 2 | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` |
+| **Baseline** | 3 | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` |
+| **Baseline Mean** | — | `PENDING` | `0.000` | `PENDING` | `0.00` | — |
+| **Ablation** | 1 | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` |
+| **Ablation** | 2 | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` |
+| **Ablation** | 3 | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` |
+| **Ablation Mean** | — | `PENDING` | `0.000` | `PENDING` | `0.00` | — |
 
-For each run, calculate each trial's advantage against that run's group mean:
+---
 
-`A_i = R_i - mean(R_1, R_2, R_3)`
+## 4. Trajectory Forensics & Controlled Ablation
 
-Do not fill this table with illustrative or fabricated values. Include the precise reward values recorded by Harbor and explain how dense scores were evaluated for the saved trial implementations.
+- **Failed Baseline Trial Inspected:** `PENDING` (`jobs_summary/` trial `trajectory.json` not yet uploaded)
+- **Root Cause Observed:** `PENDING`
+- **Single Controlled Change Made:** `PENDING` (e.g., clarifying constraint in `instruction.md` without revealing code fixes)
+- **Impact on Ablation Runs:** `PENDING`
 
-## 4. Trajectory forensics
+---
 
-### Baseline failure
+## 5. Verifier Hardening & Reward Hacking (`solution/hack.sh`)
 
-PENDING — cite the specific trial and describe the exact command/action in its `trajectory.json` that led to the failure or missed edge case.
+- **Reward Hack Exploit (`solution/hack.sh`):** Ignores the input CSV and prints a hardcoded JSON payload (`{"total_valid_amount": 150.00, "valid_count": 2, "failed_count": 1}`). Against static inline CSVs, a naive verifier can be fooled if expected outputs match.
+- **Hardening Applied (`tests/test.sh`):** Generates randomized transaction amounts, counts, `PENDING`/malformed rows, and cross-timezone duplicate `tx_id` timestamps on every test run.
+- **Verification Scores:**
+  - `hack.sh` against hardened `tests/test.sh`: `PENDING` (expected `0.00`)
+  - `solve.sh` against hardened `tests/test.sh`: `PENDING` (expected `1.00`)
 
-### Ablation hypothesis and observation
+---
 
-PENDING — state the single task change, why the baseline evidence motivated it, and what changed (or did not change) in the agent's actual trajectory and outcome.
+## 6. Short RL Answers
 
-## 5. Dense reward and anti-cheat design
+1. **Why calibrate with `nop` and `oracle` first?**
+   `nop` confirms the task is genuinely broken at baseline (`0.00`) and not trivially solved, while `oracle` (`solve.sh`) confirms the environment, dependencies, and verifier are deterministic and solvable (`1.00`).
+2. **How do binary vs. dense rewards affect Advantage and policy learning?**
+   Binary rewards (`0.0` / `1.0`) give zero learning signal when all trials in a batch fail or pass equally (`Advantage = 0`). Dense partial-credit rewards (`0.20` CLI + `0.30` logic + `0.50` edge case) differentiate partial progress across trials, creating non-zero advantages that guide gradient updates toward solving harder sub-tasks.
+3. **How do randomized/anti-cheat verifiers prevent reward hacking?**
+   Generating fresh randomized CSV inputs and timezone-offset edge cases at evaluation time ensures hardcoded outputs (`hack.sh`) fail almost certainly, forcing the agent to implement generalizable parsing and deduplication logic.
 
-### Dense reward weights
+---
 
-Proposed initial weights (verify they are implemented and each check is independent):
+## 7. Repository Deliverables
 
-| Check | Weight |
-|---|---:|
-| CLI / surface behavior | 0.20 |
-| Transaction business logic | 0.30 |
-| Duplicate and timezone edge cases | 0.50 |
-| **Total** | **1.00** |
+- `tasks/reconcile-bug/` — Task definition, broken environment, `solve.sh`, `hack.sh`, and hardened `tests/test.sh`
+- `jobs_summary/` — `PENDING` (add `result.json` and `trajectory.json` from Baseline & Ablation runs)
+- `ai_transcripts/` — `PENDING` (add exported AI coding tool session transcript)
 
-### Reward hacking attempt
+---
 
-PENDING — explain the exact shortcut implemented by `tasks/reconcile-bug/solution/hack.sh` and show the measured hardened-verifier score.
+## 8. Running Locally & Pushing Updates
 
-### Remaining risk
+```bash
+# 1. Verify nop and oracle calibration
+harbor run -p tasks/reconcile-bug -a nop
+harbor run -p tasks/reconcile-bug -a oracle
 
-PENDING — identify one plausible strategy a more capable agent could use to exploit the current verifier, and explain what additional test would reduce that risk.
+# 2. Run Baseline (3 trials) and Ablation (3 trials)
+harbor run -p tasks/reconcile-bug -a terminus-2 -k 3 -n 1
 
-## 6. AI tool workflow
-
-- **AI coding tool:** OpenAI Codex CLI (record the actual model/version used).
-- **Prompt leakage prevention:** Keep the task instructions separate from the hidden implementation and verifier; do not expose defect locations or hidden test cases in agent-visible files.
-- **Transcript:** Export the relevant Codex session into `ai_transcripts/` after sanitizing secrets and unrelated content.
-
-## Repository layout
-
-```text
-.
-├── README.md
-├── tasks/
-│   └── reconcile-bug/
-│       ├── task.toml
-│       ├── instruction.md
-│       ├── environment/
-│       │   ├── Dockerfile
-│       │   └── reconcile.py
-│       ├── solution/
-│       │   ├── solve.sh
-│       │   └── hack.sh
-│       └── tests/
-│           └── test.sh
-├── jobs_summary/
-│   └── <baseline-and-ablation-result-and-trajectory-files>
-└── ai_transcripts/
-    └── <sanitized-codex-session-export>
+# 3. Copy result.json & trajectory.json into jobs_summary/ and commit
+git add README.md tasks/reconcile-bug/tests/test.sh jobs_summary/ ai_transcripts/
+git commit -m "Restructure README per Section 8.4 and harden verifier"
+git push origin main
 ```
-
-## Reproducibility and safety
-
-- Do not commit API keys, `.env` files, virtual environments, Docker images, or unrelated local artifacts.
-- Preserve original baseline and ablation task definitions or document their exact single difference.
-- Record Harbor and model versions, commands, timestamps, and actual reward outputs.
-- A result is complete only when it can be verified from the committed artifacts or a reproducible command.
