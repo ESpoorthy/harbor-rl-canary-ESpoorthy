@@ -242,7 +242,8 @@ harbor run --path ./tasks/reconcile-bug \
   --model groq/openai/gpt-oss-120b \
   --agent-kwarg reasoning_effort=low \
   --agent-kwarg proactive_summarization_threshold=3000 \
-  --agent-kwarg 'llm_call_kwargs={"max_tokens":1024}' \
+  --agent-kwarg 'llm_call_kwargs={"max_completion_tokens":1024}' \
+  --agent-kwarg disable_web_search=true \
   --n-concurrent 1 \
   --job-name baseline-01
 ```
