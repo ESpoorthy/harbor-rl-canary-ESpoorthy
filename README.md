@@ -73,9 +73,11 @@ The hello-world check confirms that Harbor can execute a local task. The reconci
 - An earlier Gemini Baseline attempt ended with three `AuthenticationError` exceptions and **zero completed trials**. These are not valid agent failures and are excluded from the experiment results.
 - A direct Groq API preflight for `openai/gpt-oss-120b` returned HTTP 200.
 - A Groq-backed Harbor invocation on 22 November 2026 produced **1 completed trial** with reward **1.000** and **2 `RateLimitError` exceptions**. The exceptions report an 8,000-token-per-minute (TPM) on-demand limit. Job output: `jobs/2026-11-22__20-18-03/result.json`.
-- A second run named `baseline-02` produced **0 completed trials** and **1 `RateLimitError` exception**. The provider rejected a single request estimated at 8,206 tokens, above the 8,000 TPM limit. Job output: `jobs/baseline-02/result.json`.
-- In Harbor `0.26.0`, the CLI's `-k` / `--n-attempts` option means **attempts per task**, not the number of distinct task trials. The first invocation used `-k 3`, yielding one logical trial with one successful attempt and two failed attempts. To collect three distinct observations with this local single-task setup, run three separate jobs with the default one attempt each and unique job names.
-- The successful trial's reward was `1.000`. The local verifier version used for that run still needs confirmation before classifying the result as binary or dense.
+- A run named `baseline-02` produced **0 completed trials** and **1 `RateLimitError` exception**. The provider rejected a single request estimated at 8,206 tokens, above the 8,000 TPM limit. Job output: `jobs/baseline-02/result.json`.
+- A later run named `baseline-02-retry` produced **1 completed trial**, **0 exceptions**, and reward **0.000** in 35 seconds. Job output: `jobs/baseline-02-retry/result.json`.
+- There are therefore **2 successful completed agent observations** so far (rewards 1.000 and 0.000) and three rate-limit exceptions. The exceptions are not agent failures and must not enter the experiment means.
+- In Harbor `0.26.0`, the CLI's `-k` / `--n-attempts` option means **attempts per task**, not the number of distinct task trials. The first invocation used `-k 3`, yielding one logical trial with one successful attempt and two failed attempts. Separate one-attempt jobs are being used for distinct observations.
+- The verifier mode active for each successful run must be checked against the local `tests/test.sh` state at run time before classifying these rewards as binary.
 
 ---
 
@@ -89,10 +91,11 @@ The assignment requires three Baseline trials and three Ablation trials, run seq
 
 | Job | Completed trial reward | Exceptions | Evidence / observation |
 |---|---:|---:|---|
-| Initial Groq invocation (`2026-11-22__20-18-03`) | **1.000** | 2 `RateLimitError` | One valid result; reward scale awaits confirmation of local verifier version. |
-| `baseline-02` | — | 1 `RateLimitError` | No completed trial; single request estimated at 8,206 tokens against an 8,000 TPM limit. |
+| Initial Groq invocation (`2026-11-22__20-18-03`) | **1.000** | 2 `RateLimitError` | One valid result; reward scale awaits verifier-mode confirmation. |
+| `baseline-02` | — | 1 `RateLimitError` | No completed trial; request exceeded the 8,000 TPM limit. |
+| `baseline-02-retry` | **0.000** | 0 | One valid result; inspect its trajectory and confirm binary verifier was active. |
 
-**Distinct completed Baseline trials toward the required three: 1 of 3.** For this single-task workflow, make three separate Harbor jobs (unique `--job-name`, one attempt each) rather than using `-k 3`, which is attempts per task in Harbor 0.26.0.
+**Distinct completed Baseline observations: 2.** The two successful rewards are 1.000 and 0.000. Rate-limit exceptions are excluded. One additional successful Baseline trial is required.
 
 | Trial | Binary reward | Exception? | Dense reward (regrade later) | Evidence / observation |
 |---:|---:|---|---:|---|
