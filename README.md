@@ -72,9 +72,10 @@ The hello-world check confirms that Harbor can execute a local task. The reconci
 
 - An earlier Gemini Baseline attempt ended with three `AuthenticationError` exceptions and **zero completed trials**. These are not valid agent failures and are excluded from the experiment results.
 - A direct Groq API preflight for `openai/gpt-oss-120b` returned HTTP 200.
-- A Groq-backed Harbor run was completed on 22 November 2026. Harbor reported **1 completed trial**, **2 exceptions**, and reward **1.000**. Both exceptions were `RateLimitError` responses from Groq's 8,000-token-per-minute on-demand limit. Job output was saved locally at `jobs/2026-11-22__20-18-03/result.json`.
-- This run was invoked with `-k 3`. In Harbor `0.26.0`, `-k` is `--n-attempts` (attempts per trial), not the number of distinct trials. Thus the run produced one usable completed trial plus two failed attempts; it does **not** satisfy the required three completed Baseline trials.
-- The completed trial's reward was `1.000`. Confirm which verifier version was active for that local run before labeling the reward as binary or dense.
+- A Groq-backed Harbor invocation on 22 November 2026 produced **1 completed trial** with reward **1.000** and **2 `RateLimitError` exceptions**. The exceptions report an 8,000-token-per-minute (TPM) on-demand limit. Job output: `jobs/2026-11-22__20-18-03/result.json`.
+- A second run named `baseline-02` produced **0 completed trials** and **1 `RateLimitError` exception**. The provider rejected a single request estimated at 8,206 tokens, above the 8,000 TPM limit. Job output: `jobs/baseline-02/result.json`.
+- In Harbor `0.26.0`, the CLI's `-k` / `--n-attempts` option means **attempts per task**, not the number of distinct task trials. The first invocation used `-k 3`, yielding one logical trial with one successful attempt and two failed attempts. To collect three distinct observations with this local single-task setup, run three separate jobs with the default one attempt each and unique job names.
+- The successful trial's reward was `1.000`. The local verifier version used for that run still needs confirmation before classifying the result as binary or dense.
 
 ---
 
@@ -86,12 +87,12 @@ The assignment requires three Baseline trials and three Ablation trials, run seq
 
 ### Baseline results
 
-| Run / attempt | Completed trial reward | Exception | Evidence / observation |
-|---|---:|---|---|
-| 22 Nov 2026 invocation, attempt 1 | **1.000** | No | Harbor job `jobs/2026-11-22__20-18-03`; verify verifier version before classifying reward scale. |
-| 22 Nov 2026 invocation, attempts 2–3 | — | `RateLimitError` (2) | Groq TPM limit; these are infrastructure exceptions, not agent failures. |
+| Job | Completed trial reward | Exceptions | Evidence / observation |
+|---|---:|---:|---|
+| Initial Groq invocation (`2026-11-22__20-18-03`) | **1.000** | 2 `RateLimitError` | One valid result; reward scale awaits confirmation of local verifier version. |
+| `baseline-02` | — | 1 `RateLimitError` | No completed trial; single request estimated at 8,206 tokens against an 8,000 TPM limit. |
 
-**Distinct completed Baseline trials toward the required three: 1 of 3.** Use three separate Harbor jobs with default `n_attempts: 1` (omit `-k`) because Harbor 0.26.0 uses `-k` for attempts per trial.
+**Distinct completed Baseline trials toward the required three: 1 of 3.** For this single-task workflow, make three separate Harbor jobs (unique `--job-name`, one attempt each) rather than using `-k 3`, which is attempts per task in Harbor 0.26.0.
 
 | Trial | Binary reward | Exception? | Dense reward (regrade later) | Evidence / observation |
 |---:|---:|---|---:|---|
@@ -233,12 +234,20 @@ harbor run --path ./tasks/reconcile-bug --agent oracle
 
 **Baseline — binary verifier must be active**
 
+Harbor `0.26.0` treats `-k` as attempts per task. Run each distinct trial as its own one-attempt job. The smaller completion cap below is intended to reduce Groq's request-token budget pressure; verify the provider accepts the parameter.
+
 ```bash
 harbor run --path ./tasks/reconcile-bug \
   --agent terminus-2 \
   --model groq/openai/gpt-oss-120b \
-  -k 3 -n 1
+  --agent-kwarg reasoning_effort=low \
+  --agent-kwarg proactive_summarization_threshold=3000 \
+  --agent-kwarg 'llm_call_kwargs={"max_tokens":1024}' \
+  --n-concurrent 1 \
+  --job-name baseline-01
 ```
+
+Repeat with `--job-name baseline-02` and `--job-name baseline-03` only after each preceding run finishes. A provider exception is not a completed trial.
 
 **Ablation — same agent/model, after exactly one documented task change**
 
