@@ -72,7 +72,9 @@ The hello-world check confirms that Harbor can execute a local task. The reconci
 
 - An earlier Gemini Baseline attempt ended with three `AuthenticationError` exceptions and **zero completed trials**. These are not valid agent failures and are excluded from the experiment results.
 - A direct Groq API preflight for `openai/gpt-oss-120b` returned HTTP 200.
-- A Harbor Baseline run using Groq was subsequently launched after Docker was restarted. **Its final Harbor summary and job artifacts still need to be captured here.**
+- A Groq-backed Harbor run was completed on 22 November 2026. Harbor reported **1 completed trial**, **2 exceptions**, and reward **1.000**. Both exceptions were `RateLimitError` responses from Groq's 8,000-token-per-minute on-demand limit. Job output was saved locally at `jobs/2026-11-22__20-18-03/result.json`.
+- This run was invoked with `-k 3`. In Harbor `0.26.0`, `-k` is `--n-attempts` (attempts per trial), not the number of distinct trials. Thus the run produced one usable completed trial plus two failed attempts; it does **not** satisfy the required three completed Baseline trials.
+- The completed trial's reward was `1.000`. Confirm which verifier version was active for that local run before labeling the reward as binary or dense.
 
 ---
 
@@ -84,12 +86,19 @@ The assignment requires three Baseline trials and three Ablation trials, run seq
 
 ### Baseline results
 
-| Trial | Binary reward | Exception? | Evidence / observation |
-|---:|---:|---|---|
-| 1 | **Pending** | Pending | Pending |
-| 2 | **Pending** | Pending | Pending |
-| 3 | **Pending** | Pending | Pending |
-| **Mean** | **Pending** | — | — |
+| Run / attempt | Completed trial reward | Exception | Evidence / observation |
+|---|---:|---|---|
+| 22 Nov 2026 invocation, attempt 1 | **1.000** | No | Harbor job `jobs/2026-11-22__20-18-03`; verify verifier version before classifying reward scale. |
+| 22 Nov 2026 invocation, attempts 2–3 | — | `RateLimitError` (2) | Groq TPM limit; these are infrastructure exceptions, not agent failures. |
+
+**Distinct completed Baseline trials toward the required three: 1 of 3.** Use three separate Harbor jobs with default `n_attempts: 1` (omit `-k`) because Harbor 0.26.0 uses `-k` for attempts per trial.
+
+| Trial | Binary reward | Exception? | Dense reward (regrade later) | Evidence / observation |
+|---:|---:|---|---:|---|
+| Baseline 1 | Pending — verifier mode to confirm | No | Pending | Job above; inspect the trial `trajectory.json`. |
+| Baseline 2 | Pending | Pending | Pending | Pending |
+| Baseline 3 | Pending | Pending | Pending | Pending |
+| **Mean** | **Pending** | — | **Pending** | — |
 
 **Calibration target:** at least one of the three Baseline agent trials should score 0.000. If all three pass, increase the difficulty of Bug 3 and recalibrate. API, infrastructure, or authentication exceptions do not count as failed trials.
 
