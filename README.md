@@ -22,6 +22,10 @@ The container (`python:3.12-slim`) runs `python3 /app/reconcile.py <path-to-csv>
 
 ## 2. Calibration Checks (`nop` & `oracle`)
 
+**Verified local Harbor checks (reported 17 Nov 2026):** the official Harbor hello-world `nop` trial returned mean reward `0.000`; this repository's reconciliation task `nop` trial returned mean reward `0.000`; and the reconciliation task `oracle` trial using `solution/solve.sh` returned mean reward `1.000`. The corresponding local job result files were `jobs/2026-11-17__21-36-36/result.json` and `jobs/2026-11-17__21-37-27/result.json`. These local job files have not yet been confirmed as committed under `jobs_summary/`.
+
+A subsequent Baseline launch attempted three `terminus-2` trials but completed zero trials and recorded three `AuthenticationError` exceptions because the Gemini API key/model configuration was rejected. Those exceptions are infrastructure/authentication failures, **not** model calibration failures and are not counted as completed Baseline trials.
+
 | Agent | Expected Binary | Observed Binary | Expected Dense | Observed Dense | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | `nop` | `0.000` | `PENDING` | `0.00` | `PENDING` | `PENDING` |
